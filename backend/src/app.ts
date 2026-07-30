@@ -1,15 +1,31 @@
 import express,{Response, Request, NextFunction} from 'express';
 import cors from 'cors';
 import authRoutes from './routes/authRoutes';
+import restaurantRoutes from './routes/restaurant.route';
+import bookingRoutes from './routes/booking.route';
+import swaggerUi from 'swagger-ui-express';
+import { swaggerSpec } from './swagger';
+import basicAuth from 'express-basic-auth';
 
 const PORT = 8000;
 const app = express();
 app.use(cors());
 app.use(express.json());
+
+// Swagger Docs
+app.use('/api-docs', basicAuth({
+    users: {
+        [process.env.SWAGGER_USER || 'admin']: process.env.SWAGGER_PASSWORD || 'password123'
+    },
+    challenge: true,
+}), swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+
 app.get('/', (req: Request, res: Response) => {
     res.send('Server is Live!');
 });
 app.use("/api/auth", authRoutes);
+app.use("/api/restaurants", restaurantRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 // Global Error handler
 app.use((err:Error, req:Request,res:Response, next:NextFunction) => {
