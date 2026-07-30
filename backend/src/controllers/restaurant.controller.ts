@@ -21,10 +21,14 @@ const createRestaurantSchema = z.object({
     startingPrice:z.number().min(1, "Restaurant startingPrice is required"),
 });
 
+// export type CreateRestaurantInput = z.infer<typeof createRestaurantSchema>;
+
 export const createRestaurant = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
         if (!req.user) {
-            res.status(401).json({ success: false, message: "Unauthorized" });
+            res.status(401).json({ 
+                success: false, 
+                message: "Unauthorized" });
             return;
         }
 
@@ -43,7 +47,6 @@ export const createRestaurant = async (req: AuthRequest, res: Response): Promise
             data: restaurant
         });
     } catch (error) {
-        // We don't have handleError imported here, so we handle it inline (or you can extract it to a utils file later)
         if (error instanceof z.ZodError) {
             res.status(400).json({
                 success: false,
