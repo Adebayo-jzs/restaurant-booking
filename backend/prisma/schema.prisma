@@ -11,13 +11,27 @@ model User {
   name        String
   email       String       @unique
   password    String?
-  role        String       @default("USER")
+  refreshTokens RefreshToken[]
+  role        String       @default("CUSTOMER")
   restaurants Restaurant[] // an OWNER can have many restaurants
   bookings    Booking[]    // A USER can make many bookings
+  isVerified               Boolean   @default(false)
+  verificationToken        String?   // Stores the 6-digit OTP
+  verificationTokenExpires DateTime? // Expiration timestamp
   createdAt   DateTime     @default(now())
   updatedAt   DateTime     @updatedAt
 }
+model RefreshToken {
+  id        String    @id @default(cuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  createdAt DateTime  @default(now())
+  revokedAt DateTime?
 
+  @@index([userId])
+}
 model Restaurant {
   id          String   @id @default(cuid())
   name        String
