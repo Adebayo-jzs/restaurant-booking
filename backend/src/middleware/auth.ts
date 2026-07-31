@@ -7,15 +7,22 @@ interface JwtPayload {
     role: string;
 }
 
+export const normalizeRole = (role?: string | null): string => {
+    const normalized = role?.trim().toUpperCase();
+
+    if (normalized === "OWNER") return "OWNER";
+    if (normalized === "ADMIN") return "ADMIN";
+    return "CUSTOMER";
+};
+
 // Extend Express's Request type so route handlers can access req.user
 export interface AuthRequest extends Request {
     user?: JwtPayload;
 }
 
- 
-export const authMiddleware = async (req: AuthRequest, res: Response, next: NextFunction): Promise<void> => {
+export const authMiddleware = (req: AuthRequest, res: Response, next: NextFunction): void => {
     const authHeader = req.headers.authorization;
-    const cookieToken = req.cookies?.token;
+    const cookieToken = req.cookies?.accessToken;
     const token = authHeader?.startsWith("Bearer ")
         ? authHeader.split(" ")[1]
         : cookieToken;
@@ -40,7 +47,7 @@ export const authMiddleware = async (req: AuthRequest, res: Response, next: Next
     // Attach the user info to the request for use in route handlers
     req.user = {
         id: (decoded as JwtPayload).id,
-        role: (decoded as JwtPayload).role,
+        role: normalizeRole((decoded as JwtPayload).role),
     };
 
     next();
