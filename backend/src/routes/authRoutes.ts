@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { registerUser, loginUser, getMe } from "../controllers/authController";
+import { registerUser, loginUser, getMe, passwordReset, refreshAccessToken, logoutUser, verifyEmail, resendVerificationEmail } from "../controllers/authController";
 import { authMiddleware } from "../middleware/auth";
 
 
@@ -10,6 +10,7 @@ const authRoutes = Router();
  * /api/auth/register:
  *   post:
  *     summary: Register a new user
+ *     description: Creates a new user account and sends a 6-digit OTP verification email.
  *     tags: [Auth]
  *     requestBody:
  *       required: true
@@ -24,13 +25,26 @@ const authRoutes = Router();
  *                 type: string
  *               password:
  *                 type: string
+ *               role:
+ *                 type: string
+ *                 description: User role. Use CUSTOMER for regular users or OWNER for restaurant owners.
+ *                 example: CUSTOMER
  *     responses:
  *       201:
- *         description: User registered successfully
+ *         description: Account created successfully. Please check your email for the verification code.
  *         content:
  *           application/json:
  *             schema:
- *               $ref: '#/components/schemas/User'
+ *               type: object
+ *               properties:
+ *                 success:
+ *                   type: boolean
+ *                   example: true
+ *                 message:
+ *                   type: string
+ *                   example: Account created successfully. Please check your email for the verification code.
+ *                 data:
+ *                   $ref: '#/components/schemas/User'
  */
 authRoutes.post("/register", registerUser);
 
@@ -74,5 +88,118 @@ authRoutes.post("/login", loginUser);
  *               $ref: '#/components/schemas/User'
  */
 authRoutes.get("/me", authMiddleware, getMe);
+
+/**
+ * @swagger
+ * /api/auth/reset-password:
+ *   post:
+ *     summary: Reset the current user's password
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               currentPassword:
+ *                 type: string
+ *               newPassword:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Password updated successfully
+ */
+authRoutes.post("/reset-password", authMiddleware, passwordReset);
+
+/**
+ * @swagger
+ * /api/auth/refresh:
+ *   post:
+ *     summary: Refresh access token
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: false
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               refreshToken:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: New access token issued
+ */
+authRoutes.post("/refresh", refreshAccessToken);
+
+/**
+ * @swagger
+ * /api/auth/logout:
+ *   post:
+ *     summary: Logout the current user
+ *     tags: [Auth]
+ *     responses:
+ *       200:
+ *         description: Logged out successfully
+ */
+authRoutes.post("/logout", logoutUser);
+
+/**
+ * @swagger
+ * /api/auth/verify-email:
+ *   post:
+ *     summary: Verify a user's email with an OTP code
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *               - otp
+ *             properties:
+ *               email:
+ *                 type: string
+ *               otp:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Email verified successfully
+ *       400:
+ *         description: Invalid OTP or already verified
+ *       404:
+ *         description: User not found
+ */
+authRoutes.post("/verify-email", verifyEmail);
+
+/**
+ * @swagger
+ * /api/auth/resend-verification:
+ *   post:
+ *     summary: Resend verification OTP code to user's email
+ *     tags: [Auth]
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             required:
+ *               - email
+ *             properties:
+ *               email:
+ *                 type: string
+ *     responses:
+ *       200:
+ *         description: Verification email sent
+ *       400:
+ *         description: Email is required or user is already verified
+ */
+authRoutes.post("/resend-verification", resendVerificationEmail);
 
 export default authRoutes;
