@@ -1,4 +1,5 @@
 import * as bookingService from "../services/booking.service";
+import * as restaurantService from "../services/restaurant.service";
 import { Response } from "express";
 import { AuthRequest } from "../middleware/auth";
 import z from "zod";
@@ -20,12 +21,25 @@ export const createBooking = async (req: AuthRequest,res:Response): Promise<void
             return;
         }
 
+        const restaurantId = req.params.restaurantId as string;
+
+        const restaurant = await restaurantService.getRestaurantById(restaurantId);
+        if (!restaurant) {
+            res.status(404).json({ success: false, message: "Restaurant not found" });
+            return;
+        }
+
+        if (restaurant.ownerId === req.user.id) {
+            res.status(403).json({ success: false, message: "You cannot book at your own restaurant" });
+            return;
+        }
+
         const validatedData = createBookingSchema.parse(req.body);
 
         const booking = await bookingService.createBooking({
             ...validatedData,
             userId: req.user.id,
-            restaurantId: req.params.restaurantId as string,
+            restaurantId,
         });
 
         res.status(201).json({
@@ -47,5 +61,25 @@ export const createBooking = async (req: AuthRequest,res:Response): Promise<void
             success: false,
             message: "An unexpected error occurred. Please try again.",
         });
+    }
+}
+
+export const getUserBookings = async (req: AuthRequest, res: Response) => {
+    try {
+        if(!req.user) {
+            res.status(401).json({
+                success: false,
+                message: "Unauthorized",
+            });
+            return;
+        }
+
+        const bookings = await bookingService.getUserBookings(req.user.id);
+        res.status(200).json({ success: true, data: bookings });
+    } catch (error) {
+        return res.status(500).json({
+            success:false,
+            message: "Internal server error"
+        })
     }
 }
