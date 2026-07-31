@@ -1,5 +1,6 @@
 import * as restaurantService from "../services/restaurant.service";
-import { Response } from "express";
+import { getRestaurantBookings } from "../services/booking.service";
+import { Request, Response } from "express";
 import { AuthRequest } from "../middleware/auth";
 import { z } from "zod";
 
@@ -21,6 +22,14 @@ const createRestaurantSchema = z.object({
     startingPrice:z.number().min(1, "Restaurant startingPrice is required"),
 });
 
+
+const getAllQuerySchema = z.object({
+    city: z.string().optional(),
+    cuisine: z.string().optional(),
+    search: z.string().optional(),
+    page: z.coerce.number().int().positive().default(1),
+    limit: z.coerce.number().int().positive().max(100).default(20),
+});
 // export type CreateRestaurantInput = z.infer<typeof createRestaurantSchema>;
 
 export const createRestaurant = async (req: AuthRequest, res: Response): Promise<void> => {
@@ -29,6 +38,14 @@ export const createRestaurant = async (req: AuthRequest, res: Response): Promise
             res.status(401).json({ 
                 success: false, 
                 message: "Unauthorized" });
+            return;
+        }
+
+        if (req.user.role !== "OWNER") {
+            res.status(403).json({
+                success: false,
+                message: "Only restaurant owners can create restaurants",
+            });
             return;
         }
 
@@ -60,5 +77,143 @@ export const createRestaurant = async (req: AuthRequest, res: Response): Promise
             success: false,
             message: "An unexpected error occurred. Please try again.",
         });
+    }
+}
+
+export const getAllRestaurantsHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const filters = getAllQuerySchema.parse(req.query);
+        const result = await restaurantService.getAllRestaurants(filters);
+
+        res.status(200).json({ success: true, data: result });
+    } catch (error) {
+        console.error("[RestaurantController]", error);
+        res.status(501).json({
+            success:false,
+            message: "An unexpected error occurred. Please try again.",
+        })
+    }
+};
+
+export const getUserRestaurantsController = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        if(!req.user){
+            res.status(401).json({ success: false, message: "Unauthorized" });
+            return;
+        }
+        const restaurants = await restaurantService.getUserRestaurants(req.user.id);
+        res.status(200).json({ success: true, data: restaurants });
+    } catch(error){
+        console.error("[RestaurantController]", error);
+        res.status(501).json({
+            success:false,
+            message: "An unexpected error occurred. Please try again.",
+        })
+    }
+}
+
+const updateRestaurantSchema = createRestaurantSchema.partial();
+
+export const getRestaurantByIdOrSlugHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const identifier = req.params.identifier as string;
+        
+        // Single database query checking both fields
+        const restaurant = await restaurantService.getRestaurantByIdOrSlug(identifier);
+            
+        if (!restaurant) {
+            res.status(404).json({ success: false, message: "Restaurant not found" });
+            return;
+        }
+        res.status(200).json({ success: true, data: restaurant });
+    } catch (error) {
+        console.error("[RestaurantController]", error);
+        res.status(500).json({ success: false, message: "An unexpected error occurred" });
+    }
+};
+
+export const updateRestaurantHandler = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user || req.user.role !== "OWNER") {
+            res.status(403).json({ success: false, message: "Only restaurant owners can update restaurants" });
+            return;
+        }
+        
+        const restaurantId = req.params.restaurantId as string;
+        const restaurant = await restaurantService.getRestaurantById(restaurantId);
+        if (!restaurant) {
+            res.status(404).json({ success: false, message: "Restaurant not found" });
+            return;
+        }
+        
+        if (restaurant.ownerId !== req.user.id) {
+            res.status(403).json({ success: false, message: "You don't own this restaurant" });
+            return;
+        }
+
+        const validatedData = updateRestaurantSchema.parse(req.body);
+        const updated = await restaurantService.updateRestaurant(restaurantId, validatedData);
+        
+        res.status(200).json({ success: true, message: "Restaurant updated successfully", data: updated });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            res.status(400).json({ success: false, error: "Validation failed", details: error.issues });
+            return;
+        }
+        console.error("[RestaurantController]", error);
+        res.status(500).json({ success: false, message: "An unexpected error occurred" });
+    }
+};
+
+export const deactivateRestaurantHandler = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user || req.user.role !== "OWNER") {
+            res.status(403).json({ success: false, message: "Only restaurant owners can deactivate restaurants" });
+            return;
+        }
+        
+        const restaurantId = req.params.restaurantId as string;
+        const restaurant = await restaurantService.getRestaurantById(restaurantId);
+        if (!restaurant) {
+            res.status(404).json({ success: false, message: "Restaurant not found" });
+            return;
+        }
+        
+        if (restaurant.ownerId !== req.user.id) {
+            res.status(403).json({ success: false, message: "You don't own this restaurant" });
+            return;
+        }
+
+        await restaurantService.deactivateRestaurant(restaurantId);
+        res.status(200).json({ success: true, message: "Restaurant deactivated successfully" });
+    } catch (error) {
+        console.error("[RestaurantController]", error);
+        res.status(500).json({ success: false, message: "An unexpected error occurred" });
+    }
+};
+
+
+export const getRestaurantBookingsController = async (req: AuthRequest, res:Response) => {
+    try {
+        if (!req.user) {
+            res.status(401).json({ success: false, message: "Unauthorized" });
+            return;
+        }
+        const restaurantId = req.params.restaurantId as string;
+        const restaurant = await restaurantService.getRestaurantById(restaurantId);
+        if(!restaurant) {
+            res.status(404).json({ success: false, message: "Restaurant not found" });
+            return;
+        }
+        if (restaurant.ownerId !== req.user.id) {
+            res.status(403).json({ success: false, message: "No permission to perform this function" });
+            return;
+        }
+        const bookings = await getRestaurantBookings(restaurantId);
+        res.status(200).json({success: true, data: bookings})
+    
+    } catch (error){
+        console.error("[RestaurantController]", error);
+        res.status(500).json({ success: false, message: "An unexpected error occurred" });
     }
 }
