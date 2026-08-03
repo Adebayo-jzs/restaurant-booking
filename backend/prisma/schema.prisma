@@ -11,6 +11,8 @@ model User {
   name        String
   email       String       @unique
   password    String?
+  googleId    String?      @unique
+  avatarUrl   String?
   refreshTokens RefreshToken[]
   role        String       @default("CUSTOMER")
   restaurants Restaurant[] // an OWNER can have many restaurants
