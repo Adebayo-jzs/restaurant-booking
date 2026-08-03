@@ -5,12 +5,14 @@ import restaurantRoutes from './routes/restaurant.route';
 import bookingRoutes from './routes/booking.route';
 import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
+import cookieParser from 'cookie-parser';
 // import basicAuth from 'express-basic-auth';
 
 const PORT = 8000;
 const app = express();
 app.use(cors());
 app.use(express.json());
+app.use(cookieParser());
 
 // Swagger Docs
 app.get('/openapi.json', (req: Request, res: Response) => {

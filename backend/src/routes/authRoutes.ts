@@ -1,7 +1,7 @@
 import { Router } from "express";
 import { registerUser, loginUser, getMe, passwordReset, refreshAccessToken, logoutUser, verifyEmail, resendVerificationEmail } from "../controllers/authController";
 import { authMiddleware } from "../middleware/auth";
-
+import { googleRedirect, googleCallback } from "../controllers/authController";
 
 const authRoutes = Router();
 
@@ -70,6 +70,39 @@ authRoutes.post("/register", registerUser);
  *         description: Login successful
  */
 authRoutes.post("/login", loginUser);
+
+/**
+ * @swagger
+ * /api/auth/google:
+ *   get:
+ *     summary: Redirect to Google OAuth consent screen
+ *     tags: [Auth]
+ *     responses:
+ *       302:
+ *         description: Redirects to Google's login page
+ */
+authRoutes.get("/google", googleRedirect);
+
+/**
+ * @swagger
+ * /api/auth/google/callback:
+ *   get:
+ *     summary: Google OAuth callback (do not call directly)
+ *     tags: [Auth]
+ *     parameters:
+ *       - in: query
+ *         name: code
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: state
+ *         schema:
+ *           type: string
+ *     responses:
+ *       302:
+ *         description: Redirects to frontend after successful authentication
+ */
+authRoutes.get("/google/callback", googleCallback);
 
 /**
  * @swagger

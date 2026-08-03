@@ -1,3 +1,4 @@
+import crypto from "crypto"
 import { hashPassword, comparePassword } from "../services/hashService";
 import { generateAccessToken, generateRefreshToken } from "../services/jwtService";
 import {
@@ -11,7 +12,11 @@ import { Request, Response, type CookieOptions } from "express";
 import { z } from "zod";
 import { AuthRequest, normalizeRole } from "../middleware/auth";
 import { sendVerificationEmail } from "../services/email.service";
+import { getGoogleAuthUrl, getGoogleUser } from "../services/googleOAuth.service";
+import { findOrCreateGoogleUser } from "../services/user.service";
 
+
+const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
 // ─── Validation Schemas ──────────────────────────────────────────────────────
 
 const registerSchema = z.object({
@@ -200,6 +205,62 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
         });
     } catch (error) {
         handleError(res, error);
+    }
+};
+
+export const googleRedirect = (req: Request,res:Response): void => {
+    const state = crypto.randomBytes(16).toString("hex");
+
+    res.cookie("oauth_state", state, {
+        httpOnly: true,
+        secure: process.env.NODE_ENV === "production",
+        sameSite: "lax",
+        maxAge: 5 * 60 * 1000, // 5 minutes
+    });
+    const url = getGoogleAuthUrl(state);
+    res.redirect(url);
+}
+
+export const googleCallback = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const { code, state } = req.query;
+        const storedState = req.cookies?.oauth_state;
+        // ── CSRF check ──
+        if (!state || !storedState || state !== storedState) {
+            res.status(403).json({ success: false, message: "Invalid OAuth state. Possible CSRF attack." });
+            return;
+        }
+        res.clearCookie("oauth_state"); // one-time use
+        if (!code || typeof code !== "string") {
+            res.status(400).json({ success: false, message: "Missing authorization code." });
+            return;
+        }
+        // ── Exchange code for Google profile ──
+        const googleProfile = await getGoogleUser(code);
+        // ── Find or create user ──
+        const user = await findOrCreateGoogleUser(googleProfile);
+        // ── Issue your own session tokens (same as your login flow) ──
+        const accessToken = generateAccessToken({ id: user.id, role: normalizeRole(user.role) });
+        const refreshToken = generateRefreshToken();
+        await storeRefreshToken(user.id, refreshToken);
+        res.cookie("accessToken", accessToken, ACCESS_COOKIE_OPTIONS);
+        res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
+        // ── Redirect to frontend ──
+        res.status(200).json({
+            success: true,
+            message: "Google login successful!",
+            user: sanitizeUser(user),
+            accessToken,
+        });
+        // res.redirect(`${FRONTEND_URL}/auth/callback?success=true`);
+    } catch (error: any) {
+        console.error("[GoogleOAuth]", error);
+        res.status(500).json({
+            success: false,
+            message: "OAuth failed",
+            error: error?.message || error,
+            details: error?.response?.data || undefined,
+        });
     }
 };
 
