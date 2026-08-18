@@ -176,6 +176,17 @@ restaurantRoutes.get("/:identifier", RestaurantController.getRestaurantByIdOrSlu
  *         schema:
  *           type: string
  *         description: The restaurant ID
+ *       - in: query
+ *         name: status
+ *         schema:
+ *           type: string
+ *         description: Filter bookings by status (e.g. pending, confirmed, cancelled, rejected)
+ *       - in: query
+ *         name: date
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter bookings by date (e.g. 2026-08-20)
  *     responses:
  *       200:
  *         description: List of bookings for the restaurant

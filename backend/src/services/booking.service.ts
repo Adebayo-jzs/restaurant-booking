@@ -14,9 +14,27 @@ export const getUserBookings = async (userId: string) => {
     });
 };
 
-export const getRestaurantBookings = async (restaurantId: string) => {
+export interface GetBookingsFilters {
+    status?: string;
+    date?: string;
+}
+
+export const getRestaurantBookings = async (restaurantId: string, filters?: GetBookingsFilters) => {
+    const where: Prisma.BookingWhereInput = { restaurantId };
+    
+    if (filters?.status) {
+        // Prisma will handle casting to enum if status is an enum
+        where.status = filters.status.toUpperCase() as any;
+    }
+    
+    if (filters?.date) {
+        const bookingDay = new Date(filters.date);
+        bookingDay.setUTCHours(0, 0, 0, 0);
+        where.bookingDate = bookingDay;
+    }
+
     return prisma.booking.findMany({
-        where: { restaurantId },
+        where,
         orderBy: {createdAt:"desc"},
     })
 }
@@ -60,6 +78,12 @@ export const rejectBooking = async (id: string) => {
     });
 };
 
+export const cancelBooking = async (id: string) => {
+    return prisma.booking.update({
+        where: { id },
+        data: { status: "CANCELLED" }
+    });
+}
 /**
  * Creates a booking inside a transaction with row-level locking
  * to prevent overbooking a time slot.

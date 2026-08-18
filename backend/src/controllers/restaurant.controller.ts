@@ -191,6 +191,12 @@ export const deactivateRestaurantHandler = async (req: AuthRequest, res: Respons
 };
 
 
+const getBookingsQuerySchema = z.object({
+    status: z.string().optional(),
+    date: z.string().optional(),
+});
+
+
 export const getRestaurantBookingsController = async (req: AuthRequest, res:Response) => {
     try {
         if (!req.user) {
@@ -207,10 +213,16 @@ export const getRestaurantBookingsController = async (req: AuthRequest, res:Resp
             res.status(403).json({ success: false, message: "No permission to perform this function" });
             return;
         }
-        const bookings = await getRestaurantBookings(restaurantId);
+        
+        const filters = getBookingsQuerySchema.parse(req.query);
+        const bookings = await getRestaurantBookings(restaurantId, filters);
         res.status(200).json({success: true, data: bookings})
     
     } catch (error){
+        if (error instanceof z.ZodError) {
+            res.status(400).json({ success: false, error: "Validation failed", details: error.issues });
+            return;
+        }
         console.error("[RestaurantController]", error);
         res.status(500).json({ success: false, message: "An unexpected error occurred" });
     }
