@@ -140,12 +140,34 @@ export const createBooking = async (req: AuthRequest, res: Response): Promise<vo
 
             if (!isVerified) {
                 await emailService.sendBookingVerificationEmail(finalGuestEmail as string, finalGuestName as string, verificationToken as string);
+            } else {
+                // If the user was logged in, the booking is instantly verified. Notify both parties.
+                await emailService.sendNewBookingNotificationToOwner(
+                    restaurant.email,
+                    restaurant.name,
+                    finalGuestName as string,
+                    bookingDay,
+                    validatedData.bookingTime,
+                    validatedData.numberOfPeople,
+                    validatedData.specialRequests
+                );
+
+                await emailService.sendBookingPendingEmailToCustomer(
+                    finalGuestEmail as string,
+                    finalGuestName as string,
+                    restaurant.name,
+                    bookingDay,
+                    validatedData.bookingTime,
+                    validatedData.numberOfPeople
+                );
             }
+
+            const { verificationToken: _token, verificationTokenExpires: _tokenExpires, ...safeBooking } = booking;
 
             res.status(201).json({
                 success: true,
                 message: isVerified ? "Booking created successfully" : "Booking created! Please check your email for the 6-digit verification code.",
-                data: booking,
+                data: safeBooking,
             });
 
         } catch (e: any) {
@@ -220,7 +242,7 @@ export const verifyGuestBooking = async (req: Request, res: Response): Promise<v
             return;
         }
 
-        const booking = await bookingService.getBookingById(bookingId);
+        const booking = await bookingService.getBookingWithRestaurant(bookingId);
         if (!booking) {
             res.status(404).json({ success: false, message: "Booking not found" });
             return;
@@ -237,6 +259,28 @@ export const verifyGuestBooking = async (req: Request, res: Response): Promise<v
         }
 
         const verifiedBooking = await bookingService.verifyBooking(bookingId);
+
+        // Notify the owner that they have a new booking request to review
+        await emailService.sendNewBookingNotificationToOwner(
+            booking.restaurant.email,
+            booking.restaurant.name,
+            verifiedBooking.guestName,
+            verifiedBooking.bookingDate,
+            verifiedBooking.bookingTime,
+            verifiedBooking.numberOfPeople,
+            verifiedBooking.specialRequests || undefined
+        );
+
+        // Notify the customer that their request is pending
+        await emailService.sendBookingPendingEmailToCustomer(
+            verifiedBooking.guestEmail,
+            verifiedBooking.guestName,
+            booking.restaurant.name,
+            verifiedBooking.bookingDate,
+            verifiedBooking.bookingTime,
+            verifiedBooking.numberOfPeople
+        );
+
         res.status(200).json({ success: true, message: "Booking verified successfully", data: verifiedBooking });
     } catch (error) {
         console.error("[BookingController] Verify:", error);
@@ -285,6 +329,17 @@ export const acceptBooking = async (req:AuthRequest,res:Response): Promise<void>
             return;
         } 
         const acceptedBooking = await bookingService.acceptBooking(bookingId);
+
+        // Send email
+        await emailService.sendBookingStatusEmail(
+            acceptedBooking.guestEmail,
+            acceptedBooking.guestName,
+            booking.restaurant.name,
+            'CONFIRMED',
+            acceptedBooking.bookingDate,
+            acceptedBooking.bookingTime,
+            acceptedBooking.numberOfPeople
+        );
         res.status(200).json({
             success: true,
             message: "Booking accepted successfully",
@@ -338,6 +393,17 @@ export const rejectBooking = async (req:AuthRequest,res:Response): Promise<void>
             return;
         } 
         const rejectedBooking = await bookingService.rejectBooking(bookingId);
+
+        // Send email
+        await emailService.sendBookingStatusEmail(
+            rejectedBooking.guestEmail,
+            rejectedBooking.guestName,
+            booking.restaurant.name,
+            'REJECTED',
+            rejectedBooking.bookingDate,
+            rejectedBooking.bookingTime,
+            rejectedBooking.numberOfPeople
+        );
         res.status(200).json({
             success: true,
             message: "Booking rejected successfully",
@@ -352,7 +418,7 @@ export const rejectBooking = async (req:AuthRequest,res:Response): Promise<void>
 export const cancelBooking = async (req: AuthRequest, res: Response): Promise<void> => {
     try{
         const bookingId = req.params.bookingId as string;
-        const booking = await bookingService.getBookingById(bookingId);
+        const booking = await bookingService.getBookingWithRestaurant(bookingId);
         if(!booking){
             res.status(404).json({
                 success: false,
@@ -389,6 +455,17 @@ export const cancelBooking = async (req: AuthRequest, res: Response): Promise<vo
             return;
         } 
         const cancelledBooking = await bookingService.cancelBooking(bookingId);
+
+        // Send email
+        await emailService.sendBookingStatusEmail(
+            cancelledBooking.guestEmail,
+            cancelledBooking.guestName,
+            booking.restaurant.name,
+            'CANCELLED',
+            cancelledBooking.bookingDate,
+            cancelledBooking.bookingTime,
+            cancelledBooking.numberOfPeople
+        );
         res.status(200).json({
             success: true,
             message: "Booking cancelled successfully",
