@@ -1,8 +1,17 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import * as RestaurantController from "../controllers/restaurant.controller";
 import { authMiddleware, requireRole } from "../middleware/auth";
 
 const restaurantRoutes = Router();
+
+const createRestaurantLimiter = rateLimit({ 
+    windowMs: 60 * 60 * 1000, // 1 hour
+    max: 5, // Limit each IP to 5 restaurant creations per hour
+    standardHeaders: true, 
+    legacyHeaders: false, 
+    message: { success: false, message: "You have created too many restaurants recently, please try again later." }
+});
 
 /**
  * @swagger
@@ -17,34 +26,7 @@ const restaurantRoutes = Router();
  *       content:
  *         application/json:
  *           schema:
- *             type: object
- *             properties:
- *               name:
- *                 type: string
- *               description:
- *                 type: string
- *               cuisine:
- *                 type: string
- *               startingPrice:
- *                 type: number
- *               openingTime:
- *                 type: string
- *               closingTime:
- *                 type: string
- *               capacity:
- *                 type: integer
- *               address:
- *                 type: string
- *               city:
- *                 type: string
- *               state:
- *                 type: string
- *               country:
- *                 type: string
- *               email:
- *                 type: string
- *               phoneNumber:
- *                 type: string
+ *             $ref: '#/components/schemas/RestaurantInput'
  *     responses:
  *       201:
  *         description: Restaurant created successfully
@@ -55,7 +37,7 @@ const restaurantRoutes = Router();
  *       403:
  *         description: Forbidden. Only OWNER users can create restaurants.
  */
-restaurantRoutes.post("/", authMiddleware, requireRole("OWNER"), RestaurantController.createRestaurant);
+restaurantRoutes.post("/", authMiddleware, requireRole("OWNER"), createRestaurantLimiter, RestaurantController.createRestaurant);
 
 /**
  * @swagger
@@ -281,5 +263,78 @@ restaurantRoutes.put("/:restaurantId", authMiddleware, requireRole("OWNER"), Res
  *         description: Restaurant not found
  */
 restaurantRoutes.delete("/:restaurantId", authMiddleware, requireRole("OWNER"), RestaurantController.deactivateRestaurantHandler);
+
+/**
+ * @swagger
+ * /api/restaurants/{restaurantId}/availability:
+ *   post:
+ *     summary: Set exact time slot availability for specific dates
+ *     tags: [Restaurants]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: restaurantId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               availabilities:
+ *                 type: array
+ *                 items:
+ *                   type: object
+ *                   properties:
+ *                     date:
+ *                       type: string
+ *                       format: date
+ *                       example: "2026-07-01"
+ *                     timeSlots:
+ *                       type: array
+ *                       items:
+ *                         type: object
+ *                         properties:
+ *                           time:
+ *                             type: string
+ *                             example: "18:00"
+ *                           capacity:
+ *                             type: integer
+ *                             example: 20
+ *     responses:
+ *       200:
+ *         description: Availability updated successfully
+ *       403:
+ *         description: Forbidden
+ */
+restaurantRoutes.post("/:restaurantId/availability", authMiddleware, requireRole("OWNER"), RestaurantController.addRestaurantAvailabilityHandler);
+
+/**
+ * @swagger
+ * /api/restaurants/{restaurantId}/availability:
+ *   get:
+ *     summary: Get exact time slot availability
+ *     tags: [Restaurants]
+ *     parameters:
+ *       - in: path
+ *         name: restaurantId
+ *         required: true
+ *         schema:
+ *           type: string
+ *       - in: query
+ *         name: from
+ *         schema:
+ *           type: string
+ *           format: date
+ *         description: Filter availabilities from this date onwards (defaults to today)
+ *     responses:
+ *       200:
+ *         description: List of availabilities
+ */
+restaurantRoutes.get("/:restaurantId/availability", RestaurantController.getRestaurantAvailabilityHandler);
 
 export default restaurantRoutes;

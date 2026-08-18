@@ -14,10 +14,8 @@ const createRestaurantSchema = z.object({
     country:z.string().min(1, "Restaurant country is required"),
     phoneNumber:z.string().min(1, "Restaurant phoneNumber is required"),
     email:z.string().email("Invalid email"),
-    logoUrl:z.string().url("Invalid url"),
-    coverImage:z.string().url("Invalid url"),
-    openingTime:z.string().min(1, "Restaurant openingTime is required"),
-    closingTime:z.string().min(1, "Restaurant closingTime is required"),
+    logoUrl:z.string().url("Invalid url").optional(),
+    coverImage:z.string().url("Invalid url").optional(),
     capacity:z.number().min(1, "Restaurant capacity is required"),
     startingPrice:z.number().min(1, "Restaurant startingPrice is required"),
 });
@@ -217,3 +215,63 @@ export const getRestaurantBookingsController = async (req: AuthRequest, res:Resp
         res.status(500).json({ success: false, message: "An unexpected error occurred" });
     }
 }
+
+// --- Availability Endpoints ---
+
+const availabilitySchema = z.object({
+    availabilities: z.array(z.object({
+        date: z.coerce.date(),
+        timeSlots: z.array(z.object({
+            time: z.string().regex(/^([01]\d|2[0-3]):([0-5]\d)$/, "Invalid time slot format"),
+            capacity: z.number().int().min(1, "Capacity must be at least 1")
+        })),
+    })),
+});
+
+export const addRestaurantAvailabilityHandler = async (req: AuthRequest, res: Response): Promise<void> => {
+    try {
+        if (!req.user || req.user.role !== "OWNER") {
+            res.status(403).json({ success: false, message: "Only owners can manage availability" });
+            return;
+        }
+        const restaurantId = req.params.restaurantId as string;
+        const restaurant = await restaurantService.getRestaurantById(restaurantId);
+        
+        if (!restaurant) {
+            res.status(404).json({ success: false, message: "Restaurant not found" });
+            return;
+        }
+        if (restaurant.ownerId !== req.user.id) {
+            res.status(403).json({ success: false, message: "You do not own this restaurant" });
+            return;
+        }
+
+        const { availabilities } = availabilitySchema.parse(req.body);
+        
+        await restaurantService.upsertAvailabilities(restaurantId, availabilities);
+        
+        res.status(200).json({ success: true, message: "Availability updated successfully" });
+    } catch (error) {
+        if (error instanceof z.ZodError) {
+            res.status(400).json({ success: false, error: "Validation failed", details: error.issues });
+            return;
+        }
+        console.error("[RestaurantController] Availability:", error);
+        res.status(500).json({ success: false, message: "An unexpected error occurred" });
+    }
+};
+
+export const getRestaurantAvailabilityHandler = async (req: Request, res: Response): Promise<void> => {
+    try {
+        const restaurantId = req.params.restaurantId as string;
+        // Optionally filter by upcoming dates using query params
+        const fromDateStr = req.query.from as string;
+        const fromDate = fromDateStr ? new Date(fromDateStr) : new Date();
+        
+        const availabilities = await restaurantService.getAvailabilities(restaurantId, fromDate);
+        res.status(200).json({ success: true, data: availabilities });
+    } catch (error) {
+        console.error("[RestaurantController] Get Availability:", error);
+        res.status(500).json({ success: false, message: "An unexpected error occurred" });
+    }
+};
