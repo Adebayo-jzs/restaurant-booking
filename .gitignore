@@ -1,0 +1,10 @@
+# Ignore all markdown files
+*.md
+
+# Except standard project docs
+!README.md
+!LICENSE.md
+!ABOUT.md
+!CONTRIBUTING.md
+!CHANGELOG.md
+!CODE_OF_CONDUCT.md
