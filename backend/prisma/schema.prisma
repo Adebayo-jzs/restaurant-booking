@@ -87,6 +87,7 @@ model Booking {
   isVerified               Boolean   @default(false)
   verificationToken        String?
   verificationTokenExpires DateTime?
+  reminderSent             Boolean   @default(false)
 
   restaurantId   String
   restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
