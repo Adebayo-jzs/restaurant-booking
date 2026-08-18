@@ -156,6 +156,21 @@ export const createBooking = async (req: AuthRequest, res: Response): Promise<vo
                 });
                 return;
             }
+            if (e.message === "NO_AVAILABILITY") {
+                res.status(400).json({ 
+                    success: false, 
+                    message: "This restaurant is no longer accepting bookings for this date." 
+                });
+                return;
+            }
+            if (e.code === "P2028") {
+                // Prisma transaction timeout due to heavy lock contention
+                res.status(409).json({ 
+                    success: false, 
+                    message: "The booking system is currently very busy for this time slot. Please try again in a moment." 
+                });
+                return;
+            }
             throw e; // Pass to the outer catch block
         }
     } catch (error) {

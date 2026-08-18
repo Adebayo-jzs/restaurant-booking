@@ -108,12 +108,15 @@ export const createBookingInTransaction = async (
     bookingData: Prisma.BookingUncheckedCreateInput
 ) => {
     return prisma.$transaction(async (tx) => {
-        // 1. Lock the availability row for this date to prevent concurrent modifications
-        await tx.$executeRaw`
+            const lock = await tx.$queryRaw<any[]>`
             SELECT id FROM "RestaurantAvailability" 
             WHERE "restaurantId" = ${restaurantId} AND "date" = ${bookingDay} 
             FOR UPDATE
         `;
+
+        if (!lock || lock.length === 0) {
+            throw new Error("NO_AVAILABILITY");
+        }
 
         // 2. Fetch current capacity inside the transaction
         const bookingsForSlot = await tx.booking.findMany({
@@ -141,6 +144,9 @@ export const createBookingInTransaction = async (
 
         // 4. Create the booking
         return await tx.booking.create({ data: bookingData });
+    }, {
+        maxWait: 5000, // 5 seconds to get a database connection
+        timeout: 10000 // 10 seconds for the transaction to complete
     });
 };
 
