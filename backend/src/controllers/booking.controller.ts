@@ -4,7 +4,6 @@ import { Request, Response } from "express";
 import { AuthRequest } from "../middleware/auth";
 import z, { success } from "zod";
 
-import prisma from "../config/prisma";
 import crypto from "crypto";
 import * as emailService from "../services/email.service";
 
@@ -46,7 +45,7 @@ export const createBooking = async (req: AuthRequest, res: Response): Promise<vo
         let finalGuestPhone = validatedData.guestPhone;
 
         if (req.user) {
-            const userDb = await prisma.user.findUnique({ where: { id: req.user.id } });
+            const userDb = await bookingService.getUserById(req.user.id);
             if (userDb) {
                 finalGuestName = userDb.name;
                 finalGuestEmail = userDb.email;
@@ -116,53 +115,24 @@ export const createBooking = async (req: AuthRequest, res: Response): Promise<vo
         const { guestName, guestEmail, guestPhone, ...restData } = validatedData;
 
         try {
-            const booking = await prisma.$transaction(async (tx) => {
-                // 1. Lock the availability row for this date to prevent concurrent modifications
-                await tx.$executeRaw`
-                    SELECT id FROM "RestaurantAvailability" 
-                    WHERE "restaurantId" = ${restaurantId} AND "date" = ${bookingDay} 
-                    FOR UPDATE
-                `;
-
-                // 2. Fetch current capacity inside the transaction
-                const bookingsForSlot = await tx.booking.findMany({
-                    where: { 
-                        restaurantId, 
-                        bookingDate: bookingDay,
-                        bookingTime: validatedData.bookingTime,
-                        status: { in: ["PENDING", "CONFIRMED"] },
-                        OR: [
-                            { isVerified: true },
-                            {
-                                isVerified: false,
-                                verificationTokenExpires: { gt: new Date() }
-                            }
-                        ]
-                    }
-                });
-
-                const currentBookedPeople = bookingsForSlot.reduce((sum, b) => sum + b.numberOfPeople, 0);
-
-                // 3. Reject if overbooked
-                if (currentBookedPeople + validatedData.numberOfPeople > requestedSlot.capacity) {
-                    throw new Error("OVERBOOKED");
+            const booking = await bookingService.createBookingInTransaction(
+                restaurantId,
+                bookingDay,
+                validatedData.bookingTime,
+                validatedData.numberOfPeople,
+                requestedSlot.capacity,
+                {
+                    ...restData,
+                    userId: req.user ? req.user.id : null,
+                    restaurantId,
+                    guestName: finalGuestName as string,
+                    guestEmail: finalGuestEmail as string,
+                    guestPhone: finalGuestPhone as string,
+                    isVerified,
+                    verificationToken,
+                    verificationTokenExpires
                 }
-
-                // 4. Create the booking
-                return await tx.booking.create({
-                    data: {
-                        ...restData,
-                        userId: req.user ? req.user.id : null,
-                        restaurantId,
-                        guestName: finalGuestName as string,
-                        guestEmail: finalGuestEmail as string,
-                        guestPhone: finalGuestPhone as string,
-                        isVerified,
-                        verificationToken,
-                        verificationTokenExpires
-                    }
-                });
-            });
+            );
 
             if (!isVerified) {
                 await emailService.sendBookingVerificationEmail(finalGuestEmail as string, finalGuestName as string, verificationToken as string);
@@ -258,10 +228,7 @@ export const verifyGuestBooking = async (req: Request, res: Response): Promise<v
 export const acceptBooking = async (req:AuthRequest,res:Response): Promise<void> =>{
     try{
         const bookingId = req.params.bookingId as string;
-        const booking = await prisma.booking.findUnique({
-            where: {id: bookingId},
-            include: {restaurant: true}
-        })
+        const booking = await bookingService.getBookingWithRestaurant(bookingId);
         if(!booking){
             res.status(404).json({
                 success: false,
@@ -298,10 +265,7 @@ export const acceptBooking = async (req:AuthRequest,res:Response): Promise<void>
             });
             return;
         } 
-        const acceptedBooking = await prisma.booking.update({
-            where: {id: bookingId},
-            data: {status: "CONFIRMED"}
-        })
+        const acceptedBooking = await bookingService.acceptBooking(bookingId);
         res.status(200).json({
             success: true,
             message: "Booking accepted successfully",
@@ -317,10 +281,7 @@ export const acceptBooking = async (req:AuthRequest,res:Response): Promise<void>
 export const rejectBooking = async (req:AuthRequest,res:Response): Promise<void> =>{
     try{
         const bookingId = req.params.bookingId as string;
-        const booking = await prisma.booking.findUnique({
-            where: {id: bookingId},
-            include: {restaurant: true}
-        })
+        const booking = await bookingService.getBookingWithRestaurant(bookingId);
         if(!booking){
             res.status(404).json({
                 success: false,
@@ -357,10 +318,7 @@ export const rejectBooking = async (req:AuthRequest,res:Response): Promise<void>
             });
             return;
         } 
-        const rejectedBooking = await prisma.booking.update({
-            where: {id: bookingId},
-            data: {status: "REJECTED"}
-        })
+        const rejectedBooking = await bookingService.rejectBooking(bookingId);
         res.status(200).json({
             success: true,
             message: "Booking rejected successfully",

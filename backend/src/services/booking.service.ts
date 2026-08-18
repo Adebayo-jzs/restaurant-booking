@@ -25,6 +25,17 @@ export const getBookingById = async (id: string) => {
     return prisma.booking.findUnique({ where: { id } });
 };
 
+export const getBookingWithRestaurant = async (id: string) => {
+    return prisma.booking.findUnique({
+        where: { id },
+        include: { restaurant: true },
+    });
+};
+
+export const getUserById = async (userId: string) => {
+    return prisma.user.findUnique({ where: { id: userId } });
+};
+
 export const verifyBooking = async (id: string) => {
     return prisma.booking.update({
         where: { id },
@@ -32,6 +43,69 @@ export const verifyBooking = async (id: string) => {
             isVerified: true,
             verificationToken: null,
         }
+    });
+};
+
+export const acceptBooking = async (id: string) => {
+    return prisma.booking.update({
+        where: { id },
+        data: { status: "CONFIRMED" },
+    });
+};
+
+export const rejectBooking = async (id: string) => {
+    return prisma.booking.update({
+        where: { id },
+        data: { status: "REJECTED" },
+    });
+};
+
+/**
+ * Creates a booking inside a transaction with row-level locking
+ * to prevent overbooking a time slot.
+ */
+export const createBookingInTransaction = async (
+    restaurantId: string,
+    bookingDay: Date,
+    bookingTime: string,
+    numberOfPeople: number,
+    slotCapacity: number,
+    bookingData: Prisma.BookingUncheckedCreateInput
+) => {
+    return prisma.$transaction(async (tx) => {
+        // 1. Lock the availability row for this date to prevent concurrent modifications
+        await tx.$executeRaw`
+            SELECT id FROM "RestaurantAvailability" 
+            WHERE "restaurantId" = ${restaurantId} AND "date" = ${bookingDay} 
+            FOR UPDATE
+        `;
+
+        // 2. Fetch current capacity inside the transaction
+        const bookingsForSlot = await tx.booking.findMany({
+            where: {
+                restaurantId,
+                bookingDate: bookingDay,
+                bookingTime,
+                status: { in: ["PENDING", "CONFIRMED"] },
+                OR: [
+                    { isVerified: true },
+                    {
+                        isVerified: false,
+                        verificationTokenExpires: { gt: new Date() }
+                    }
+                ]
+            }
+        });
+
+        const currentBookedPeople = bookingsForSlot.reduce((sum, b) => sum + b.numberOfPeople, 0);
+
+        // 3. Reject if overbooked
+        if (currentBookedPeople + numberOfPeople > slotCapacity) {
+            throw new Error("OVERBOOKED");
+        }
+
+        // 4. Create the booking
+        return await tx.booking.create({ data: bookingData });
     });
 };
 
