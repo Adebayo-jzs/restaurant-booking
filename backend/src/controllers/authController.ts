@@ -50,8 +50,8 @@ const REFRESH_COOKIE_OPTIONS = {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    // Path must match the full mounted route: app.use("/api/auth") + router "/refresh" = "/api/auth/refresh"
-    path: "/api/auth/refresh",
+    // Path must match the full mounted route: app.use("/auth") + router "/refresh" = "/auth/refresh"
+    path: "/auth/refresh",
 };
 
 

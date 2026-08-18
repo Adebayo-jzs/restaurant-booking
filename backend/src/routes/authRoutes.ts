@@ -16,7 +16,7 @@ const authLimiter = rateLimit({
 
 /**
  * @swagger
- * /api/auth/register:
+ * /auth/register:
  *   post:
  *     summary: Register a new user
  *     description: Creates a new user account and sends a 6-digit OTP verification email.
@@ -59,7 +59,7 @@ authRoutes.post("/register", authLimiter, registerUser);
 
 /**
  * @swagger
- * /api/auth/login:
+ * /auth/login:
  *   post:
  *     summary: Login user
  *     tags: [Auth]
@@ -82,7 +82,7 @@ authRoutes.post("/login", authLimiter, loginUser);
 
 /**
  * @swagger
- * /api/auth/google:
+ * /auth/google:
  *   get:
  *     summary: Redirect to Google OAuth consent screen
  *     tags: [Auth]
@@ -94,7 +94,7 @@ authRoutes.get("/google", googleRedirect);
 
 /**
  * @swagger
- * /api/auth/google/callback:
+ * /auth/google/callback:
  *   get:
  *     summary: Google OAuth callback (do not call directly)
  *     tags: [Auth]
@@ -115,7 +115,7 @@ authRoutes.get("/google/callback", googleCallback);
 
 /**
  * @swagger
- * /api/auth/me:
+ * /auth/me:
  *   get:
  *     summary: Get current user
  *     tags: [Auth]
@@ -133,7 +133,7 @@ authRoutes.get("/me", authMiddleware, getMe);
 
 /**
  * @swagger
- * /api/auth/reset-password:
+ * /auth/reset-password:
  *   post:
  *     summary: Reset the current user's password
  *     tags: [Auth]
@@ -158,7 +158,7 @@ authRoutes.post("/reset-password", authMiddleware, authLimiter, passwordReset);
 
 /**
  * @swagger
- * /api/auth/refresh:
+ * /auth/refresh:
  *   post:
  *     summary: Refresh access token
  *     tags: [Auth]
@@ -179,7 +179,7 @@ authRoutes.post("/refresh", refreshAccessToken);
 
 /**
  * @swagger
- * /api/auth/logout:
+ * /auth/logout:
  *   post:
  *     summary: Logout the current user
  *     tags: [Auth]
@@ -191,7 +191,7 @@ authRoutes.post("/logout", logoutUser);
 
 /**
  * @swagger
- * /api/auth/verify-email:
+ * /auth/verify-email:
  *   post:
  *     summary: Verify a user's email with an OTP code
  *     tags: [Auth]
@@ -221,7 +221,7 @@ authRoutes.post("/verify-email", authLimiter, verifyEmail);
 
 /**
  * @swagger
- * /api/auth/resend-verification:
+ * /auth/resend-verification:
  *   post:
  *     summary: Resend verification OTP code to user's email
  *     tags: [Auth]

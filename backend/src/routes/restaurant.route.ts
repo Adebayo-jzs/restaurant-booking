@@ -15,7 +15,7 @@ const createRestaurantLimiter = rateLimit({
 
 /**
  * @swagger
- * /api/restaurants:
+ * /restaurants:
  *   post:
  *     summary: Create a new restaurant
  *     tags: [Restaurants]
@@ -41,7 +41,7 @@ restaurantRoutes.post("/", authMiddleware, requireRole("OWNER"), createRestauran
 
 /**
  * @swagger
- * /api/restaurants:
+ * /restaurants:
  *   get:
  *     summary: Get all restaurants
  *     tags: [Restaurants]
@@ -106,7 +106,7 @@ restaurantRoutes.get("/", RestaurantController.getAllRestaurantsHandler);
 
 /**
  * @swagger
- * /api/restaurants/my-restaurants:
+ * /restaurants/my-restaurants:
  *   get:
  *     summary: Get restaurants owned by the current user
  *     tags: [Restaurants]
@@ -133,7 +133,7 @@ restaurantRoutes.get("/my-restaurants", authMiddleware, RestaurantController.get
 
 /**
  * @swagger
- * /api/restaurants/{identifier}:
+ * /restaurants/{identifier}:
  *   get:
  *     summary: Get a restaurant by ID or slug
  *     tags: [Restaurants]
@@ -163,7 +163,7 @@ restaurantRoutes.get("/:identifier", RestaurantController.getRestaurantByIdOrSlu
 
 /**
  * @swagger
- * /api/restaurants/{restaurantId}/bookings:
+ * /restaurants/{restaurantId}/bookings:
  *   get:
  *     summary: Get all bookings for a restaurant
  *     tags: [Restaurants]
@@ -199,7 +199,7 @@ restaurantRoutes.get("/:restaurantId/bookings", authMiddleware, RestaurantContro
 
 /**
  * @swagger
- * /api/restaurants/{restaurantId}:
+ * /restaurants/{restaurantId}:
  *   put:
  *     summary: Update a restaurant
  *     tags: [Restaurants]
@@ -241,7 +241,7 @@ restaurantRoutes.put("/:restaurantId", authMiddleware, requireRole("OWNER"), Res
 
 /**
  * @swagger
- * /api/restaurants/{restaurantId}:
+ * /restaurants/{restaurantId}:
  *   delete:
  *     summary: Deactivate a restaurant
  *     tags: [Restaurants]
@@ -266,7 +266,7 @@ restaurantRoutes.delete("/:restaurantId", authMiddleware, requireRole("OWNER"), 
 
 /**
  * @swagger
- * /api/restaurants/{restaurantId}/availability:
+ * /restaurants/{restaurantId}/availability:
  *   post:
  *     summary: Set exact time slot availability for specific dates
  *     tags: [Restaurants]
@@ -315,7 +315,7 @@ restaurantRoutes.post("/:restaurantId/availability", authMiddleware, requireRole
 
 /**
  * @swagger
- * /api/restaurants/{restaurantId}/availability:
+ * /restaurants/{restaurantId}/availability:
  *   get:
  *     summary: Get exact time slot availability
  *     tags: [Restaurants]

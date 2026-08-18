@@ -15,7 +15,7 @@ const createBookingLimiter = rateLimit({
 
 /**
  * @swagger
- * /api/bookings/{restaurantId}/book:
+ * /bookings/{restaurantId}/book:
  *   post:
  *     summary: Book a table at a restaurant
  *     tags: [Bookings]
@@ -64,7 +64,7 @@ bookingRoutes.post("/:restaurantId/book", optionalAuthMiddleware, createBookingL
 
 /**
  * @swagger
- * /api/bookings/{bookingId}/verify:
+ * /bookings/{bookingId}/verify:
  *   post:
  *     summary: Verify a guest booking using OTP
  *     tags: [Bookings]
@@ -93,7 +93,7 @@ bookingRoutes.post("/:bookingId/verify", BookingController.verifyGuestBooking);
 
 /**
  * @swagger
- * /api/bookings/{bookingId}/accept:
+ * /bookings/{bookingId}/accept:
  *   post:
  *     summary: Accept a pending booking (Owner only)
  *     tags: [Bookings]
@@ -119,7 +119,7 @@ bookingRoutes.post("/:bookingId/accept", authMiddleware, requireRole("OWNER"), B
 
 /**
  * @swagger
- * /api/bookings/{bookingId}/reject:
+ * /bookings/{bookingId}/reject:
  *   post:
  *     summary: Reject a pending booking (Owner only)
  *     tags: [Bookings]
@@ -145,7 +145,7 @@ bookingRoutes.post("/:bookingId/reject", authMiddleware, requireRole("OWNER"), B
 
 /**
  * @swagger
- * /api/bookings/my-bookings:
+ * /bookings/my-bookings:
  *   get:
  *     summary: Get all bookings for the current user
  *     tags: [Bookings]

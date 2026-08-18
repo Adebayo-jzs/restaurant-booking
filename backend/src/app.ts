@@ -34,9 +34,9 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
 app.get('/', (req: Request, res: Response) => {
     res.send('Server is Live!');
 });
-app.use("/api/auth", authRoutes);
-app.use("/api/restaurants", restaurantRoutes);
-app.use("/api/bookings", bookingRoutes);
+app.use("/auth", authRoutes);
+app.use("/restaurants", restaurantRoutes);
+app.use("/bookings", bookingRoutes);
 
 // Global Error handler
 app.use((err:Error, req:Request,res:Response, next:NextFunction) => {
