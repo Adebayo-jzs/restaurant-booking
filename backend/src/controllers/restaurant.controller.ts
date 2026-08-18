@@ -83,7 +83,7 @@ export const getAllRestaurantsHandler = async (req: Request, res: Response): Pro
         const filters = getAllQuerySchema.parse(req.query);
         const result = await restaurantService.getAllRestaurants(filters);
 
-        res.status(200).json({ success: true, data: result });
+        res.status(200).json({ success: true, restaurants: result.restaurants, pagination: result.pagination });
     } catch (error) {
         console.error("[RestaurantController]", error);
         res.status(501).json({
@@ -123,7 +123,7 @@ export const getRestaurantByIdOrSlugHandler = async (req: Request, res: Response
             res.status(404).json({ success: false, message: "Restaurant not found" });
             return;
         }
-        res.status(200).json({ success: true, data: restaurant });
+        res.status(200).json({ success: true, restaurant: restaurant });
     } catch (error) {
         console.error("[RestaurantController]", error);
         res.status(500).json({ success: false, message: "An unexpected error occurred" });
