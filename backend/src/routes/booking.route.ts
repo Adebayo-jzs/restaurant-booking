@@ -145,6 +145,33 @@ bookingRoutes.post("/:bookingId/reject", authMiddleware, requireRole("OWNER"), B
 
 /**
  * @swagger
+ * /bookings/{bookingId}/cancel:
+ *   post:
+ *     summary: Cancel a pending booking (User only)
+ *     tags: [Bookings]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: bookingId
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Booking rejected successfully
+ *       400:
+ *         description: Invalid state transition
+ *       403:
+ *         description: Forbidden (Not the user)
+ *       404:
+ *         description: Booking not found
+ */
+bookingRoutes.post("/:bookingId/cancel", authMiddleware, requireRole("USER"), BookingController.cancelBooking);
+
+
+/**
+ * @swagger
  * /bookings/my-bookings:
  *   get:
  *     summary: Get all bookings for the current user

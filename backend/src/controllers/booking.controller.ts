@@ -329,3 +329,55 @@ export const rejectBooking = async (req:AuthRequest,res:Response): Promise<void>
         res.status(500).json({ success: false, message: "Internal server error" });
     }
 }
+
+export const cancelBooking = async (req: AuthRequest, res: Response): Promise<void> => {
+    try{
+        const bookingId = req.params.bookingId as string;
+        const booking = await bookingService.getBookingById(bookingId);
+        if(!booking){
+            res.status(404).json({
+                success: false,
+                message: "Booking not found"
+            });
+            return;
+        }
+        if (booking?.userId !== req.user?.id) {
+            res.status(403).json({
+                success: false,
+                message: "Unauthorized to perform this action: You are not the user who made this booking"
+            });
+            return;
+        }
+        if(booking.status === "CONFIRMED"){
+            res.status(400).json({
+                success: false,
+                message: "Booking has already been accepted"  
+            });
+            return;
+        }        
+        if(booking.status === "CANCELLED" || booking.status === "REJECTED"){
+            res.status(400).json({
+                success: false,
+                message: `Booking has already been ${booking.status.toLowerCase()}`  
+            });
+            return;
+        }
+        if(booking.status === "PENDING" && new Date(booking.bookingDate) < new Date(new Date().setHours(0,0,0,0))){
+            res.status(400).json({
+                success: false,
+                message: "Booking has already expired"  
+            });
+            return;
+        } 
+        const cancelledBooking = await bookingService.cancelBooking(bookingId);
+        res.status(200).json({
+            success: true,
+            message: "Booking cancelled successfully",
+            data: cancelledBooking
+        })
+    } catch(error) {
+        console.error("[BookingController] Cancel:", error);
+        res.status(500).json({ success: false, message: "Internal server error" });
+    }
+        
+}
