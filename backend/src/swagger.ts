@@ -62,7 +62,7 @@ const options: swaggerJsdoc.Options = {
         },
         RestaurantInput: {
           type: 'object',
-          required: ['name', 'slug', 'description', 'cuisine', 'city', 'address', 'country', 'phoneNumber', 'email', 'openingTime', 'closingTime', 'capacity', 'startingPrice'],
+          required: ['name', 'slug', 'description', 'cuisine', 'city', 'address', 'country', 'phoneNumber', 'email', 'capacity', 'startingPrice'],
           properties: {
             name: { type: 'string', example: 'The Golden Fork' },
             slug: { type: 'string', example: 'the-golden-fork' },
@@ -75,8 +75,6 @@ const options: swaggerJsdoc.Options = {
             email: { type: 'string', format: 'email', example: 'contact@goldenfork.com' },
             logoUrl: { type: 'string', example: 'https://example.com/logo.png' },
             coverImage: { type: 'string', example: 'https://example.com/cover.jpg' },
-            openingTime: { type: 'string', example: '09:00' },
-            closingTime: { type: 'string', example: '22:00' },
             capacity: { type: 'integer', example: 100 },
             startingPrice: { type: 'number', example: 50 },
             state: { type: 'string', example: 'Lagos State' },
@@ -84,13 +82,15 @@ const options: swaggerJsdoc.Options = {
         },
         BookingInput: {
           type: 'object',
-          required: ['restaurantId', 'bookingDate', 'bookingTime', 'numberOfPeople'],
+          required: ['bookingDate', 'bookingTime', 'numberOfPeople'],
           properties: {
-            restaurantId: { type: 'string', example: 'res_abc123' },
             bookingDate: { type: 'string', format: 'date-time', example: '2023-11-15T00:00:00.000Z' },
             bookingTime: { type: 'string', example: '19:30' },
             numberOfPeople: { type: 'integer', example: 4 },
             specialRequests: { type: 'string', example: 'Window seat if possible' },
+            guestName: { type: 'string', example: 'Jane Doe' },
+            guestEmail: { type: 'string', format: 'email', example: 'jane@example.com' },
+            guestPhone: { type: 'string', example: '+2348000000000' },
           },
         },
         User: {
@@ -113,8 +113,6 @@ const options: swaggerJsdoc.Options = {
             description: { type: 'string', example: 'A modern restaurant serving local and continental dishes.' },
             cuisine: { type: 'string', example: 'Italian' },
             startingPrice: { type: 'number', example: 50 },
-            openingTime: { type: 'string', example: '09:00' },
-            closingTime: { type: 'string', example: '22:00' },
             capacity: { type: 'integer', example: 100 },
             address: { type: 'string', example: '123 Main Street' },
             city: { type: 'string', example: 'Lagos' },
@@ -129,6 +127,25 @@ const options: swaggerJsdoc.Options = {
             ownerId: { type: 'string', example: 'cld1xxyz0000...' },
             createdAt: { type: 'string', format: 'date-time', example: '2023-10-01T12:00:00Z' },
             updatedAt: { type: 'string', format: 'date-time', example: '2023-10-01T12:00:00Z' },
+            availabilities: {
+              type: 'array',
+              items: {
+                type: 'object',
+                properties: {
+                  date: { type: 'string', format: 'date-time', example: '2026-08-17T00:00:00.000Z' },
+                  timeSlots: {
+                    type: 'array',
+                    items: {
+                      type: 'object',
+                      properties: {
+                        time: { type: 'string', example: '18:00' },
+                        capacity: { type: 'integer', example: 20 },
+                      },
+                    },
+                  },
+                },
+              },
+            },
           },
         },
         Booking: {
@@ -140,7 +157,11 @@ const options: swaggerJsdoc.Options = {
             numberOfPeople: { type: 'integer', example: 4 },
             status: { type: 'string', example: 'PENDING' },
             specialRequests: { type: 'string', example: 'Window seat if possible' },
-            userId: { type: 'string', example: 'cld1xxyz0000...' },
+            userId: { type: 'string', nullable: true, example: 'cld1xxyz0000...' },
+            guestName: { type: 'string', example: 'Jane Doe' },
+            guestEmail: { type: 'string', format: 'email', example: 'jane@example.com' },
+            guestPhone: { type: 'string', example: '+2348000000000' },
+            isVerified: { type: 'boolean', example: false },
             restaurantId: { type: 'string', example: 'res_abc123' },
             createdAt: { type: 'string', format: 'date-time', example: '2023-10-01T12:00:00Z' },
             updatedAt: { type: 'string', format: 'date-time', example: '2023-10-01T12:00:00Z' },
@@ -148,11 +169,6 @@ const options: swaggerJsdoc.Options = {
         },
       },
     },
-    security: [
-      {
-        bearerAuth: [],
-      },
-    ],
   },
   apis: ['./src/routes/*.ts'],
 };

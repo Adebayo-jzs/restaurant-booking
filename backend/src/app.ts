@@ -1,5 +1,7 @@
 import express,{Response, Request, NextFunction} from 'express';
 import cors from 'cors';
+import helmet from 'helmet';
+import compression from 'compression';
 import authRoutes from './routes/authRoutes';
 import restaurantRoutes from './routes/restaurant.route';
 import bookingRoutes from './routes/booking.route';
@@ -8,8 +10,9 @@ import { swaggerSpec } from './swagger';
 import cookieParser from 'cookie-parser';
 // import basicAuth from 'express-basic-auth';
 
-const PORT = 8000;
 const app = express();
+app.use(helmet());
+app.use(compression());
 app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
@@ -43,7 +46,5 @@ app.use((err:Error, req:Request,res:Response, next:NextFunction) => {
         stack: process.env.NODE_ENV === 'production' ? undefined : err.stack,
     });
 })
-
-app.listen(PORT,()=> {console.log(`Server is up and running on port ${PORT}`)});
 
 export default app;
