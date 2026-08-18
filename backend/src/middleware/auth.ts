@@ -53,6 +53,31 @@ export const authMiddleware = (req: AuthRequest, res: Response, next: NextFuncti
     next();
 };
 
+export const optionalAuthMiddleware = (req: AuthRequest, res: Response, next: NextFunction): void => {
+    const authHeader = req.headers.authorization;
+    const cookieToken = req.cookies?.accessToken;
+    const token = authHeader?.startsWith("Bearer ")
+        ? authHeader.split(" ")[1]
+        : cookieToken;
+
+    if (!token) {
+        return next(); // No token, proceed as guest
+    }
+
+    const decoded = verifyToken(token);
+    if (!decoded || typeof decoded === "string") {
+        return next(); // Invalid token, proceed as guest
+    }
+
+    // Attach the user info if the token is valid
+    req.user = {
+        id: (decoded as JwtPayload).id,
+        role: normalizeRole((decoded as JwtPayload).role),
+    };
+
+    next();
+};
+
 export const requireRole = (...roles: string[]) => {
     return (req: AuthRequest, res: Response, next: NextFunction): void => {
         if (!req.user) {

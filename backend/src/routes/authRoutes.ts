@@ -1,9 +1,18 @@
 import { Router } from "express";
+import rateLimit from "express-rate-limit";
 import { registerUser, loginUser, getMe, passwordReset, refreshAccessToken, logoutUser, verifyEmail, resendVerificationEmail } from "../controllers/authController";
 import { authMiddleware } from "../middleware/auth";
 import { googleRedirect, googleCallback } from "../controllers/authController";
 
 const authRoutes = Router();
+
+const authLimiter = rateLimit({ 
+    windowMs: 15 * 60 * 1000,
+    max: 20,
+    standardHeaders: true, 
+    legacyHeaders: false, 
+    message: { success: false, message: "Too many requests, please try again later." }
+});
 
 /**
  * @swagger
@@ -46,7 +55,7 @@ const authRoutes = Router();
  *                 data:
  *                   $ref: '#/components/schemas/User'
  */
-authRoutes.post("/register", registerUser);
+authRoutes.post("/register", authLimiter, registerUser);
 
 /**
  * @swagger
@@ -69,7 +78,7 @@ authRoutes.post("/register", registerUser);
  *       200:
  *         description: Login successful
  */
-authRoutes.post("/login", loginUser);
+authRoutes.post("/login", authLimiter, loginUser);
 
 /**
  * @swagger
@@ -145,7 +154,7 @@ authRoutes.get("/me", authMiddleware, getMe);
  *       200:
  *         description: Password updated successfully
  */
-authRoutes.post("/reset-password", authMiddleware, passwordReset);
+authRoutes.post("/reset-password", authMiddleware, authLimiter, passwordReset);
 
 /**
  * @swagger
@@ -208,7 +217,7 @@ authRoutes.post("/logout", logoutUser);
  *       404:
  *         description: User not found
  */
-authRoutes.post("/verify-email", verifyEmail);
+authRoutes.post("/verify-email", authLimiter, verifyEmail);
 
 /**
  * @swagger
@@ -233,6 +242,6 @@ authRoutes.post("/verify-email", verifyEmail);
  *       400:
  *         description: Email is required or user is already verified
  */
-authRoutes.post("/resend-verification", resendVerificationEmail);
+authRoutes.post("/resend-verification", authLimiter, resendVerificationEmail);
 
 export default authRoutes;

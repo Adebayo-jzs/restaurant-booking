@@ -50,7 +50,8 @@ const REFRESH_COOKIE_OPTIONS = {
     secure: process.env.NODE_ENV === "production",
     sameSite: "lax" as const,
     maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
-    path: "/auth/refresh", // scope the cookie so it's only sent to the refresh endpoint
+    // Path must match the full mounted route: app.use("/api/auth") + router "/refresh" = "/api/auth/refresh"
+    path: "/api/auth/refresh",
 };
 
 
@@ -145,6 +146,13 @@ export const verifyEmail = async (req: Request, res: Response): Promise<void> =>
 };
 
 export const resendVerificationEmail = async (req: Request, res: Response): Promise<void> => {
+    // Neutral message used in ALL cases to prevent email enumeration.
+    // An attacker must not be able to tell the difference between:
+    //   - Email not found
+    //   - Email found but already verified
+    //   - Email found and OTP was resent
+    const NEUTRAL_MSG = "If your email is registered and unverified, a new code has been sent.";
+
     try {
         const { email } = req.body;
         if (!email) {
@@ -154,14 +162,10 @@ export const resendVerificationEmail = async (req: Request, res: Response): Prom
 
         const user = await findUserByEmail(email);
 
-        if (!user) {
-            // Return success to prevent email enumeration
-            res.status(200).json({ success: true, message: "If your email is registered, a new verification code has been sent." });
-            return;
-        }
-
-        if (user.isVerified) {
-            res.status(400).json({ success: false, message: "Account is already verified." });
+        // Silently do nothing for unknown or already-verified accounts —
+        // always return the same neutral 200 to prevent enumeration.
+        if (!user || user.isVerified) {
+            res.status(200).json({ success: true, message: NEUTRAL_MSG });
             return;
         }
 
@@ -172,7 +176,7 @@ export const resendVerificationEmail = async (req: Request, res: Response): Prom
 
         sendVerificationEmail(email, user.name, otp).catch(err => console.error("Email resend failed:", err));
 
-        res.status(200).json({ success: true, message: "If your email is registered, a new verification code has been sent." });
+        res.status(200).json({ success: true, message: NEUTRAL_MSG });
     } catch (error) {
         handleError(res, error);
     }
@@ -246,13 +250,8 @@ export const googleCallback = async (req: Request, res: Response): Promise<void>
         res.cookie("accessToken", accessToken, ACCESS_COOKIE_OPTIONS);
         res.cookie("refreshToken", refreshToken, REFRESH_COOKIE_OPTIONS);
         // ── Redirect to frontend ──
-        res.status(200).json({
-            success: true,
-            message: "Google login successful!",
-            user: sanitizeUser(user),
-            accessToken,
-        });
-        // res.redirect(`${FRONTEND_URL}/auth/callback?success=true`);
+        const FRONTEND_URL = process.env.FRONTEND_URL || "http://localhost:3000";
+        res.redirect(`${FRONTEND_URL}/auth/callback?token=${accessToken}`);
     } catch (error: any) {
         console.error("[GoogleOAuth]", error);
         res.status(500).json({
