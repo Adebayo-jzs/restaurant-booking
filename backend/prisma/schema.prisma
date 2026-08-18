@@ -41,8 +41,6 @@ model Restaurant {
   description String?
   cuisine     String
   startingPrice Float?
-  openingTime   String?  // e.g., "09:00"
-  closingTime   String?  // e.g., "22:00"
   capacity      Int?     // Total number of people the restaurant can seat
   address     String
   city        String
@@ -61,7 +59,8 @@ model Restaurant {
   ownerId     String
   owner       User     @relation(fields: [ownerId], references: [id])
 
-  bookings    Booking[]
+  bookings       Booking[]
+  availabilities RestaurantAvailability[]
 
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
@@ -78,8 +77,16 @@ model Booking {
   status         String     @default("PENDING") // PENDING, CONFIRMED, CANCELLED, REJECTED
   specialRequests String?
 
-  userId         String
-  user           User       @relation(fields: [userId], references: [id])
+  userId         String?
+  user           User?      @relation(fields: [userId], references: [id])
+  
+  guestName      String
+  guestEmail     String
+  guestPhone     String
+
+  isVerified               Boolean   @default(false)
+  verificationToken        String?
+  verificationTokenExpires DateTime?
 
   restaurantId   String
   restaurant     Restaurant @relation(fields: [restaurantId], references: [id])
@@ -89,4 +96,15 @@ model Booking {
 
   @@index([userId])
   @@index([restaurantId])
+}
+
+model RestaurantAvailability {
+  id           String     @id @default(cuid())
+  restaurantId String
+  restaurant   Restaurant @relation(fields: [restaurantId], references: [id], onDelete: Cascade)
+  
+  date         DateTime   @db.Date // Specific calendar date (e.g., 2026-07-01)
+  timeSlots    Json       // Array of objects: [{ time: "18:00", capacity: 20 }]
+
+  @@unique([restaurantId, date])
 }
