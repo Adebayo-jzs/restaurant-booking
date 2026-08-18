@@ -48,7 +48,8 @@ export const getAllRestaurants = async (filters: GetAllFilters) => {
             const slots = rest.availabilities[0].timeSlots as { time: string; capacity: number }[];
             rest.availabilities[0].timeSlots = slots.filter(slot => slot.time > currentTimeStr);
         }
-        return rest;
+        const { ownerId, ...restWithoutOwner } = rest;
+        return restWithoutOwner;
     });
 
     return {
@@ -103,6 +104,9 @@ export const getRestaurantByIdOrSlug = async (identifier: string) => {
             const slots = avail.timeSlots as { time: string; capacity: number }[];
             return slots.length > 0;
         });
+        
+        const { ownerId, ...restaurantWithoutOwner } = restaurant;
+        return restaurantWithoutOwner;
     }
 
     return restaurant;

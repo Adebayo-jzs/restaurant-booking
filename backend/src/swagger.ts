@@ -124,7 +124,6 @@ const options: swaggerJsdoc.Options = {
             coverImage: { type: 'string', example: 'https://example.com/cover.jpg' },
             isActive: { type: 'boolean', example: true },
             isVerified: { type: 'boolean', example: false },
-            ownerId: { type: 'string', example: 'cld1xxyz0000...' },
             createdAt: { type: 'string', format: 'date-time', example: '2023-10-01T12:00:00Z' },
             updatedAt: { type: 'string', format: 'date-time', example: '2023-10-01T12:00:00Z' },
             availabilities: {
