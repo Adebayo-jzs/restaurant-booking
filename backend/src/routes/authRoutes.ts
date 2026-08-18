@@ -72,8 +72,10 @@ authRoutes.post("/register", authLimiter, registerUser);
  *             properties:
  *               email:
  *                 type: string
+ *                 example: calmsp0+owner1@gmail.com
  *               password:
  *                 type: string
+ *                 example: passwword
  *     responses:
  *       200:
  *         description: Login successful

@@ -161,6 +161,7 @@ const options: swaggerJsdoc.Options = {
             guestEmail: { type: 'string', format: 'email', example: 'jane@example.com' },
             guestPhone: { type: 'string', example: '+2348000000000' },
             isVerified: { type: 'boolean', example: false },
+            reminderSent: { type: 'boolean', example: false },
             restaurantId: { type: 'string', example: 'res_abc123' },
             restaurant: {
               type: 'object',
