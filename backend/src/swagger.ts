@@ -162,6 +162,17 @@ const options: swaggerJsdoc.Options = {
             guestPhone: { type: 'string', example: '+2348000000000' },
             isVerified: { type: 'boolean', example: false },
             restaurantId: { type: 'string', example: 'res_abc123' },
+            restaurant: {
+              type: 'object',
+              description: 'Included when fetching user bookings',
+              properties: {
+                id: { type: 'string', example: 'res_abc123' },
+                name: { type: 'string', example: 'The Golden Fork' },
+                logoUrl: { type: 'string', example: 'https://example.com/logo.png' },
+                address: { type: 'string', example: '123 Main Street' },
+                city: { type: 'string', example: 'Lagos' },
+              }
+            },
             createdAt: { type: 'string', format: 'date-time', example: '2023-10-01T12:00:00Z' },
             updatedAt: { type: 'string', format: 'date-time', example: '2023-10-01T12:00:00Z' },
           },

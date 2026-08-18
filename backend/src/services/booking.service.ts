@@ -11,6 +11,17 @@ export const getUserBookings = async (userId: string) => {
     return prisma.booking.findMany({
         where: { userId },
         orderBy: { createdAt: "desc" },
+        include: {
+            restaurant: {
+                select: {
+                    id: true,
+                    name: true,
+                    logoUrl: true,
+                    address: true,
+                    city: true
+                }
+            }
+        }
     });
 };
 
