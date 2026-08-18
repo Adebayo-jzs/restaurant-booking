@@ -47,6 +47,10 @@ export const createBooking = async (req: AuthRequest, res: Response): Promise<vo
         if (req.user) {
             const userDb = await bookingService.getUserById(req.user.id);
             if (userDb) {
+                if (!userDb.isVerified) {
+                    res.status(403).json({ success: false, message: "You must verify your email before creating a booking." });
+                    return;
+                }
                 finalGuestName = userDb.name;
                 finalGuestEmail = userDb.email;
             }

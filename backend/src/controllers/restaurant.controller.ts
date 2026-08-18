@@ -1,5 +1,6 @@
 import * as restaurantService from "../services/restaurant.service";
 import { getRestaurantBookings } from "../services/booking.service";
+import { findUserById } from "../services/user.service";
 import { Request, Response } from "express";
 import { AuthRequest } from "../middleware/auth";
 import { z } from "zod";
@@ -28,7 +29,6 @@ const getAllQuerySchema = z.object({
     page: z.coerce.number().int().positive().default(1),
     limit: z.coerce.number().int().positive().max(100).default(20),
 });
-// export type CreateRestaurantInput = z.infer<typeof createRestaurantSchema>;
 
 export const createRestaurant = async (req: AuthRequest, res: Response): Promise<void> => {
     try {
@@ -43,6 +43,15 @@ export const createRestaurant = async (req: AuthRequest, res: Response): Promise
             res.status(403).json({
                 success: false,
                 message: "Only restaurant owners can create restaurants",
+            });
+            return;
+        }
+
+        const userDb = await findUserById(req.user.id);
+        if (!userDb || !userDb.isVerified) {
+            res.status(403).json({
+                success: false,
+                message: "You must verify your email before creating a restaurant",
             });
             return;
         }
