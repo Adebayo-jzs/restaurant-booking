@@ -2,8 +2,11 @@
 import jwt, { SignOptions } from 'jsonwebtoken';
 import crypto from 'crypto';
 
-const JWT_SECRET = process.env.JWT_SECRET;
-if (!JWT_SECRET) throw new Error("JWT_SECRET environment variable is not set");
+const getJwtSecret = (): string => {
+    const secret = process.env.JWT_SECRET;
+    if (!secret) throw new Error("JWT_SECRET environment variable is not set");
+    return secret;
+};
 
 interface TokenPayload {
     id: string;
@@ -12,12 +15,12 @@ interface TokenPayload {
 
 // Short-lived access token (unchanged logic, shorter default)
 export const generateAccessToken = (payload: TokenPayload, expiresIn: SignOptions['expiresIn'] = '15m') => {
-    return jwt.sign(payload, JWT_SECRET, { expiresIn });
+    return jwt.sign(payload, getJwtSecret(), { expiresIn });
 };
 
 export const verifyToken = (token: string) => {
     try {
-        return jwt.verify(token, JWT_SECRET);
+        return jwt.verify(token, getJwtSecret());
     } catch (error) {
         return null;
     }

@@ -1,11 +1,20 @@
 import {SendByte} from "@sendbyte/node";
 
-const sendbyte = new SendByte(process.env.SENDBYTE_API_KEY as string);
+// Lazy-initialized SendByte client – supports both env-var casings
+let _sendbyte: SendByte | null = null;
+const getSendbyte = (): SendByte => {
+    if (!_sendbyte) {
+        const apiKey = process.env.SENDBYTE_API_KEY || process.env.SENDBYTE_API_kEY;
+        if (!apiKey) throw new Error("SENDBYTE_API_KEY environment variable is not set");
+        _sendbyte = new SendByte(apiKey);
+    }
+    return _sendbyte;
+};
 
 export const sendVerificationEmail = async (email: string, name: string, otp: string) => {
     try {
 
-        await sendbyte.emails.send({
+        await getSendbyte().emails.send({
             from: 'Restaurant Booking Platform <bayo@try.sendbyte.africa>',
             to: email,
             subject: 'Verify your email address',
@@ -23,7 +32,7 @@ export const sendVerificationEmail = async (email: string, name: string, otp: st
 
 export const sendBookingVerificationEmail = async (email: string, name: string, otp: string) => {
     try {
-        await sendbyte.emails.send({
+        await getSendbyte().emails.send({
             from: 'Restaurant Booking Platform <bayo@try.sendbyte.africa>',
             to: email,
             subject: 'Verify your restaurant booking',
@@ -42,7 +51,7 @@ export const sendBookingVerificationEmail = async (email: string, name: string, 
 
 export const sendReminderEmail = async (email:string, name: string, restaurant:string, date:Date, time: string, numberOfPeople: number, specialRequests?:string ) => {
     try {
-        await sendbyte.emails.send({
+        await getSendbyte().emails.send({
             from: 'Restaurant Booking Platform <bayo@try.sendbyte.africa>',
             to: email,
             subject: 'Reminder: Your restaurant booking is in 10 minutes!',
@@ -96,7 +105,7 @@ export const sendBookingStatusEmail = async (
             color = '#6B7280'; // Gray
         }
 
-        await sendbyte.emails.send({
+        await getSendbyte().emails.send({
             from: 'Restaurant Booking Platform <bayo@try.sendbyte.africa>',
             to: email,
             subject: subject,
@@ -128,7 +137,7 @@ export const sendNewBookingNotificationToOwner = async (
     specialRequests?: string
 ) => {
     try {
-        await sendbyte.emails.send({
+        await getSendbyte().emails.send({
             from: 'Restaurant Booking Platform <bayo@try.sendbyte.africa>',
             to: ownerEmail,
             subject: `New Booking Request: ${restaurantName}`,
@@ -161,7 +170,7 @@ export const sendBookingPendingEmailToCustomer = async (
     numberOfPeople: number
 ) => {
     try {
-        await sendbyte.emails.send({
+        await getSendbyte().emails.send({
             from: 'Restaurant Booking Platform <bayo@try.sendbyte.africa>',
             to: email,
             subject: `Booking Request Sent: ${restaurantName}`,

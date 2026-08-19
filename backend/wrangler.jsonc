@@ -1,0 +1,21 @@
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "restaurant-booking-backend",
+  "main": "src/worker.ts",
+  "compatibility_date": "2026-08-15",
+  "compatibility_flags": [
+    "nodejs_compat",
+    "enable_nodejs_http_server_modules"
+  ],
+
+  // Cron trigger: runs the booking-reminder check every minute
+  "triggers": {
+    "crons": ["* * * * *"]
+  },
+
+  // Environment variables are set via `wrangler secret put <NAME>` or the Cloudflare dashboard.
+  // Do NOT commit secrets here. See .env.example for the full list.
+  "vars": {
+    "NODE_ENV": "production"
+  }
+}
