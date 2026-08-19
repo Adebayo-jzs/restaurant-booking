@@ -1,4 +1,3 @@
-import cron from 'node-cron';
 import prisma from '../config/prisma';
 import { sendReminderEmail } from './email.service';
 
@@ -70,11 +69,13 @@ export const checkAndSendBookingReminders = async () => {
 
 /**
  * Start node-cron based jobs – used for local development only.
- * In Cloudflare Workers, the `scheduled` handler calls checkAndSendBookingReminders() directly.
+ * node-cron is dynamically imported to avoid bundling it in Cloudflare Workers
+ * (it uses fileURLToPath internally which is incompatible with the Workers runtime).
  */
-export const startCronJobs = () => {
+export const startCronJobs = async () => {
+    const cron = await import('node-cron');
     // Run every minute
-    cron.schedule('* * * * *', async () => {
+    cron.default.schedule('* * * * *', async () => {
         try {
             await checkAndSendBookingReminders();
         } catch (error) {
@@ -84,3 +85,4 @@ export const startCronJobs = () => {
 
     console.log("[Cron] Scheduled jobs initialized.");
 };
+
