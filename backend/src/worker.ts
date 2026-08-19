@@ -16,9 +16,12 @@ app.listen(PORT, () => {
     console.log(`[Worker] Express server listening on internal port ${PORT}`);
 });
 
+// httpServerHandler returns an ExportedHandler with a fetch method.
+// Spread it so we inherit the fetch handler, then add our scheduled handler.
+const httpHandler = httpServerHandler({ port: PORT });
+
 export default {
-    // Route all incoming HTTP requests to the Express app
-    fetch: httpServerHandler({ port: PORT }),
+    ...httpHandler,
 
     // Cloudflare Cron Trigger – runs booking reminder checks
     async scheduled(
@@ -30,3 +33,4 @@ export default {
         ctx.waitUntil(checkAndSendBookingReminders());
     },
 };
+
