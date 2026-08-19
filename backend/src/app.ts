@@ -5,7 +5,6 @@ import compression from 'compression';
 import authRoutes from './routes/authRoutes';
 import restaurantRoutes from './routes/restaurant.route';
 import bookingRoutes from './routes/booking.route';
-import swaggerUi from 'swagger-ui-express';
 import { swaggerSpec } from './swagger';
 import cookieParser from 'cookie-parser';
 // import basicAuth from 'express-basic-auth';
@@ -17,19 +16,18 @@ app.use(cors());
 app.use(express.json());
 app.use(cookieParser());
 
-// Swagger Docs
+// Swagger Docs – JSON spec is always available
 app.get('/openapi.json', (req: Request, res: Response) => {
     res.setHeader('Content-Type', 'application/json');
     res.send(swaggerSpec);
 });
 
-app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
-// app.use('/api-docs', basicAuth({
-//     users: {
-//         [process.env.SWAGGER_USER || 'admin']: process.env.SWAGGER_PASSWORD || 'password123'
-//     },
-//     challenge: true,
-// }), swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+// Swagger UI – only in non-production (swagger-ui-dist uses __dirname, which is unavailable in CF Workers)
+if (process.env.NODE_ENV !== 'production') {
+    import('swagger-ui-express').then((swaggerUi) => {
+        app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpec));
+    });
+}
 
 app.get('/', (req: Request, res: Response) => {
     res.send('Server is Live!');
@@ -47,4 +45,4 @@ app.use((err:Error, req:Request,res:Response, next:NextFunction) => {
     });
 })
 
-export default app;
+export default app;
