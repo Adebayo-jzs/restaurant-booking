@@ -213,7 +213,7 @@ export const loginUser = async (req: Request, res: Response): Promise<void> => {
 };
 
 export const googleRedirect = (req: Request,res:Response): void => {
-    const state = crypto.randomBytes(16).toString("hex");
+    const state = Buffer.from(crypto.randomBytes(16)).toString("hex");
 
     res.cookie("oauth_state", state, {
         httpOnly: true,

@@ -10,9 +10,14 @@ import cookieParser from 'cookie-parser';
 // import basicAuth from 'express-basic-auth';
 
 const app = express();
-app.use(helmet());
+app.use(helmet({ crossOriginResourcePolicy: false }));
 app.use(compression());
-app.use(cors());
+app.use(cors({
+    origin: true,
+    credentials: true,
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Accept', 'Origin', 'X-Requested-With'],
+}));
 app.use(express.json());
 app.use(cookieParser());
 

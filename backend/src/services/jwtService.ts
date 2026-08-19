@@ -28,7 +28,7 @@ export const verifyToken = (token: string) => {
 
 // Refresh token: random opaque string, NOT a JWT — simpler to revoke, nothing to "decode"
 export const generateRefreshToken = () => {
-    return crypto.randomBytes(40).toString('hex');
+    return Buffer.from(crypto.randomBytes(40)).toString('hex');
 };
 
 export const hashRefreshToken = (token: string) => {
