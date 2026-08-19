@@ -3,9 +3,11 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useState, useEffect } from 'react';
+import { useAuth } from '@/lib/auth-context';
 
 export default function Navbar() {
   const pathname = usePathname();
+  const { user, logout } = useAuth();
   const [scrolled, setScrolled] = useState(false);
 
   useEffect(() => {
@@ -125,24 +127,54 @@ export default function Navbar() {
           >
             My Bookings
           </Link>
-          <Link
-            href="/owner/dashboard"
-            style={{
-              fontSize: '0.95rem',
-              fontWeight: 500,
-              color: pathname.startsWith('/owner') ? 'var(--accent-gold)' : 'var(--text-secondary)',
-              transition: 'color var(--transition-fast)',
-            }}
-          >
-            Owner Portal
-          </Link>
+          {user?.role === 'OWNER' && (
+            <Link
+              href="/owner/dashboard"
+              style={{
+                fontSize: '0.95rem',
+                fontWeight: 500,
+                color: pathname.startsWith('/owner') ? 'var(--accent-gold)' : 'var(--text-secondary)',
+                transition: 'color var(--transition-fast)',
+              }}
+            >
+              Owner Portal
+            </Link>
+          )}
         </nav>
 
-        {/* Action Button */}
+        {/* Auth / Action Button */}
         <div style={{ display: 'flex', alignItems: 'center', gap: '1rem' }}>
-          <Link href="/explore" className="btn btn-primary" style={{ padding: '0.6rem 1.2rem', fontSize: '0.9rem' }}>
-            Book a Table ✨
-          </Link>
+          {user ? (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <span className="badge badge-muted" style={{ textTransform: 'none' }}>
+                👤 {user.name.split(' ')[0]} ({user.role})
+              </span>
+              <button
+                onClick={logout}
+                className="btn btn-secondary"
+                style={{ padding: '0.45rem 0.85rem', fontSize: '0.82rem' }}
+              >
+                Sign Out
+              </button>
+            </div>
+          ) : (
+            <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
+              <Link
+                href="/login"
+                style={{
+                  fontSize: '0.9rem',
+                  fontWeight: 600,
+                  color: 'var(--text-secondary)',
+                  padding: '0.5rem 0.75rem',
+                }}
+              >
+                Sign In
+              </Link>
+              <Link href="/explore" className="btn btn-primary" style={{ padding: '0.55rem 1.1rem', fontSize: '0.88rem' }}>
+                Book a Table ✨
+              </Link>
+            </div>
+          )}
         </div>
       </div>
     </header>

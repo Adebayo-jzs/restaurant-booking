@@ -4,8 +4,10 @@ import { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
 import { Booking } from '@/lib/types';
 import { getUserBookings, cancelBooking } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 
 export default function MyBookingsPage() {
+  const { user, token } = useAuth();
   const [bookings, setBookings] = useState<Booking[]>([]);
   const [loading, setLoading] = useState(true);
   const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
@@ -14,16 +16,17 @@ export default function MyBookingsPage() {
   const loadBookings = useCallback(async () => {
     setLoading(true);
     try {
-      const res = await getUserBookings();
-      if (res?.data) {
-        setBookings(res.data);
+      const res = await getUserBookings(token || undefined);
+      const list = res?.data || (Array.isArray(res) ? res : []);
+      if (list) {
+        setBookings(list);
       }
     } catch (err: unknown) {
       console.error('Could not load user bookings:', err);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [token]);
 
   useEffect(() => {
     loadBookings();
@@ -35,7 +38,7 @@ export default function MyBookingsPage() {
     setMessage('');
 
     try {
-      await cancelBooking(bookingId);
+      await cancelBooking(bookingId, token || undefined);
       // Optimistic status update
       setBookings((prev) =>
         prev.map((b) => (b.id === bookingId ? { ...b, status: 'CANCELLED' } : b))

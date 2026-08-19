@@ -1,6 +1,7 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Restaurant, Booking } from '@/lib/types';
 import { createBooking, verifyGuestBooking } from '@/lib/api';
+import { useAuth } from '@/lib/auth-context';
 
 interface BookingModalProps {
   restaurant: Restaurant;
@@ -17,12 +18,22 @@ export default function BookingModal({
   isOpen,
   onClose,
 }: BookingModalProps) {
+  const { user, token } = useAuth();
+
   // Form State
   const [numberOfPeople, setNumberOfPeople] = useState(2);
-  const [guestName, setGuestName] = useState('');
-  const [guestEmail, setGuestEmail] = useState('');
-  const [guestPhone, setGuestPhone] = useState('');
+  const [guestName, setGuestName] = useState(user?.name || '');
+  const [guestEmail, setGuestEmail] = useState(user?.email || '');
+  const [guestPhone, setGuestPhone] = useState(user?.phoneNumber || '');
   const [specialRequests, setSpecialRequests] = useState('');
+
+  useEffect(() => {
+    if (user) {
+      if (!guestName) setGuestName(user.name);
+      if (!guestEmail) setGuestEmail(user.email);
+      if (!guestPhone && user.phoneNumber) setGuestPhone(user.phoneNumber);
+    }
+  }, [user]);
 
   // Flow State: 'FORM' | 'OTP' | 'SUCCESS'
   const [step, setStep] = useState<'FORM' | 'OTP' | 'SUCCESS'>('FORM');
@@ -39,15 +50,19 @@ export default function BookingModal({
     setLoading(true);
 
     try {
-      const res = await createBooking(restaurant.id, {
-        bookingDate: selectedDate,
-        bookingTime: selectedTime,
-        numberOfPeople,
-        guestName,
-        guestEmail,
-        guestPhone,
-        specialRequests: specialRequests || undefined,
-      });
+      const res = await createBooking(
+        restaurant.id,
+        {
+          bookingDate: selectedDate,
+          bookingTime: selectedTime,
+          numberOfPeople,
+          guestName,
+          guestEmail,
+          guestPhone,
+          specialRequests: specialRequests || undefined,
+        },
+        token || undefined
+      );
 
       if (res.data) {
         setCreatedBooking(res.data);

@@ -2,6 +2,7 @@ import type { Metadata } from 'next';
 import './globals.css';
 import Navbar from '@/components/Navbar';
 import Footer from '@/components/Footer';
+import { AuthProvider } from '@/lib/auth-context';
 
 export const metadata: Metadata = {
   metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'http://localhost:3000'),
@@ -42,9 +43,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body>
-        <Navbar />
-        <main style={{ minHeight: '80vh' }}>{children}</main>
-        <Footer />
+        <AuthProvider>
+          <Navbar />
+          <main style={{ minHeight: '80vh' }}>{children}</main>
+          <Footer />
+        </AuthProvider>
       </body>
     </html>
   );
