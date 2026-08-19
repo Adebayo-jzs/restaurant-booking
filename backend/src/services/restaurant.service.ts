@@ -45,8 +45,9 @@ export const getAllRestaurants = async (filters: GetAllFilters) => {
     
     const processedRestaurants = restaurants.map(rest => {
         if (rest.availabilities && rest.availabilities.length > 0) {
-            const slots = rest.availabilities[0].timeSlots as { time: string; capacity: number }[];
-            rest.availabilities[0].timeSlots = slots.filter(slot => slot.time > currentTimeStr);
+            const rawSlots = rest.availabilities[0].timeSlots;
+            const slots = Array.isArray(rawSlots) ? rawSlots : (typeof rawSlots === 'string' ? JSON.parse(rawSlots) : []);
+            rest.availabilities[0].timeSlots = slots.filter((slot: { time: string; capacity: number }) => slot.time > currentTimeStr);
         }
         const { ownerId, ...restWithoutOwner } = rest;
         return restWithoutOwner;
@@ -94,19 +95,26 @@ export const getRestaurantByIdOrSlug = async (identifier: string) => {
     });
 
     if (restaurant) {
-        restaurant.availabilities = restaurant.availabilities.map(avail => {
-            if (avail.date.getTime() === today.getTime()) {
-                const slots = avail.timeSlots as { time: string; capacity: number }[];
-                avail.timeSlots = slots.filter(slot => slot.time > currentTimeStr);
+        const safeAvailabilities = (restaurant.availabilities || []).map(avail => {
+            const availDate = new Date(avail.date);
+            const rawSlots = avail.timeSlots;
+            let slots = Array.isArray(rawSlots) ? rawSlots : (typeof rawSlots === 'string' ? JSON.parse(rawSlots) : []);
+            if (availDate.getTime() === today.getTime()) {
+                slots = slots.filter((slot: { time: string; capacity: number }) => slot.time > currentTimeStr);
             }
-            return avail;
+            return {
+                ...avail,
+                timeSlots: slots,
+            };
         }).filter(avail => {
-            const slots = avail.timeSlots as { time: string; capacity: number }[];
-            return slots.length > 0;
+            return Array.isArray(avail.timeSlots) && avail.timeSlots.length > 0;
         });
         
         const { ownerId, ...restaurantWithoutOwner } = restaurant;
-        return restaurantWithoutOwner;
+        return {
+            ...restaurantWithoutOwner,
+            availabilities: safeAvailabilities,
+        };
     }
 
     return restaurant;
