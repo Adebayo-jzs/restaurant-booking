@@ -110,8 +110,12 @@ export interface UserBookingsResponse {
 export interface AuthResponse {
     success: boolean;
     message: string;
-    data?: {
-        user: User;
+    accessToken?: string;
+    token?: string;
+    user?: User;
+    data?: User | {
+        user?: User;
         token?: string;
+        accessToken?: string;
     };
 }

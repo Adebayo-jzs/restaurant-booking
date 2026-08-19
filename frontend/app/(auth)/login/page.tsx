@@ -27,8 +27,8 @@ export default function LoginPage() {
         body: JSON.stringify({ email, password }),
       });
 
-      const user = res?.data?.user;
-      const token = res?.data?.token;
+      const token = res.accessToken || res.token || (res.data && 'token' in res.data ? (res.data as any).token : undefined);
+      const user = (res.data && 'id' in res.data ? (res.data as any) : undefined) || res.user || (res.data && 'user' in res.data ? (res.data as any).user : undefined);
 
       if (user && token) {
         login(token, user);
